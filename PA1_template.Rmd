@@ -5,21 +5,85 @@ output:
     keep_md: true
 ---
 
+```{r include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, warning = FALSE, message = FALSE)
+```
 
 ## Loading and preprocessing the data
-
-
+```{r}
+library(tidyverse)
+activity <- read_csv("activity.zip", col_types = cols(date = col_date(format = "%Y-%m-%d"), steps = col_double()))
+```
 
 ## What is mean total number of steps taken per day?
 
+```{r}
+library(tidyverse)
+nbr_stp_p_day <- activity %>% group_by(date) %>% summarise(stp_cnt = sum(steps, na.rm = TRUE))
 
+hist(nbr_stp_p_day$stp_cnt, xlab = "nbre of steps", main = "histogram")
+
+mean_stp <- mean(nbr_stp_p_day$stp_cnt, na.rm = TRUE)
+
+median_stp <- median(nbr_stp_p_day$stp_cnt, na.rm = TRUE )
+
+mean_stp
+
+median_stp
+
+abline(v=mean_stp)
+
+abline(v=median_stp)
+```
 
 ## What is the average daily activity pattern?
 
+```{r}
+nbr_stp_p_int <- activity %>% group_by(interval) %>% summarise(stp_cnt = sum(steps, na.rm = TRUE))
 
+with(nbr_stp_p_int,plot(interval,stp_cnt, type = "l" ))
+
+max_stp = max(max(nbr_stp_p_int$stp_cnt))
+
+max_stp_int <- filter(nbr_stp_p_int, stp_cnt == max_stp) %>% select(interval)
+
+# max step count for 5 mn interval
+max_stp_int
+
+```
 
 ## Imputing missing values
 
+```{r}
+# Number of missing values in the dataset 
+sum(is.na(activity))
 
+activity <- activity %>% replace_na(list(steps=mean(activity$steps,na.rm=TRUE),date=mean(activity$date,na.rm=TRUE),interval=mean(activity$interval,na.rm=TRUE)))
+
+nbr_stp_p_day <- activity %>% group_by(date) %>% summarise(stp_cnt = sum(steps))
+hist(nbr_stp_p_day$stp_cnt, xlab = "nbre of steps", main = "histogram")
+
+mean_stp <- mean(nbr_stp_p_day$stp_cnt, na.rm = TRUE)
+
+median_stp <- median(nbr_stp_p_day$stp_cnt, na.rm = TRUE )
+
+abline(v=mean_stp)
+
+abline(v=median_stp)
+
+# the median and the are on the same line and the frequency are greater than the first one
+
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+
+```{r}
+library(ggplot2)
+
+activity <- activity %>% mutate(type_day = if_else(weekdays(date) %in% c("samedi","dimanche"), "weekend", "weekday"))
+
+act_typ_day <- activity %>% group_by(type_day, interval) %>% summarise(avg_stp = mean(steps))
+
+ggplot(act_typ_day, aes(x=interval, y=avg_stp)) + geom_line() + facet_wrap(vars(type_day)) + labs(title = "avg steps per interval")
+```
